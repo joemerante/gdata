@@ -68,8 +68,8 @@ module GData
       end
       
       # Sends an HTTP request and return the response.
-      def make_request(method, url, body = '')
-        headers = self.prepare_headers
+      def make_request(method, url, body = '', etag = nil)
+        headers = etag ? self.prepare_headers(etag) : self.prepare_headers
         request = GData::HTTP::Request.new(url, :headers => headers, 
           :method => method, :body => body)
         
@@ -124,12 +124,13 @@ module GData
       end
       
       # Performs an HTTP DELETE against the API.
-      def delete(url)
-        return self.make_request(:delete, url)
+      def delete(url, etag=nil)
+        @etag = etag ? etag : nil
+        return self.make_request(:delete, url, '', @etag)
       end
       
       # Constructs some necessary headers for every request.
-      def prepare_headers
+      def prepare_headers(etag=nil)
         headers = @headers
         headers['GData-Version'] = @version
         headers['User-Agent'] = GData::Auth::SOURCE_LIB_STRING + @source
@@ -137,6 +138,7 @@ module GData
         if not headers.has_key?('Content-Type')
           headers['Content-Type'] = 'application/atom+xml'
         end
+        headers['If-Match'] = etag if etag
         return headers
       end
       
